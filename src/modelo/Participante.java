@@ -1,17 +1,28 @@
 package modelo;
 
-public class Participante extends Usuario {
+public class Participante extends Usuario implements Classificavel {
     private int pontuacaoTotal;
 
-    // Construtor
+    // Construtor padrão
+    public Participante() {
+        super();
+        this.pontuacaoTotal = 0;
+    }
+
+    // Construtor sobrecarregado
     public Participante(String nome, String email) {
         super(nome, email);
-        this.pontuacaoTotal = 0; // Todo participante começa com 0 pontos
+        this.pontuacaoTotal = 0;
     }
 
     @Override
     public void exibirPerfil() {
         System.out.println("PARTICIPANTE: " + this.nome + " (" + this.email + ") | Pontos: " + this.pontuacaoTotal);
+    }
+
+    @Override
+    public void exibirClassificacao() {
+        System.out.println("Nome: " + this.nome + " | Pontuação: " + this.pontuacaoTotal);
     }
 
     public void adicionarPontos(int pontos) {
@@ -21,6 +32,7 @@ public class Participante extends Usuario {
     }
 
     // --- GETTERS E SETTERS ---
+    @Override
     public int getPontuacaoTotal() {
         return pontuacaoTotal;
     }

@@ -37,14 +37,13 @@ public class Aposta {
 
     public void calcularPontuacao() {
         if (!partida.isFinalizada()) {
-            return; // Só calcula se o admin já registou o resultado real
+            return; // Só calcula se o admin já registou o resultado
         }
 
         int realM = partida.getGolsMandante();
         int realV = partida.getGolsVisitante();
         int pontosGanhos = 0;
 
-        // Caso 1: Acertar o resultado e o placar exato (10 pontos)
         if (realM == golsMandanteApostado && realV == golsVisitanteApostado) {
             pontosGanhos = 10;
         }
@@ -65,11 +64,9 @@ public class Aposta {
             }
         }
 
-        // Atribui os pontos ao participante
         participante.adicionarPontos(pontosGanhos);
     }
 
-    // --- GETTERS E SETTERS (ENCAPSULAMENTO) ---
     public Partida getPartida() { return partida; }
     public Participante getParticipante() { return participante; }
 }

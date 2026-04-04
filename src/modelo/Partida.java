@@ -11,11 +11,16 @@ public class Partida {
     private int golsVisitante;
     private boolean finalizada;
 
+    // Construtor padrão
+    public Partida() {
+        this.finalizada = false;
+    }
+
+    // Construtor sobrecarregado — recebe a data/hora real da partida
     public Partida(Clube mandante, Clube visitante, LocalDateTime dataHora) {
         this.mandante = mandante;
         this.visitante = visitante;
         this.dataHora = dataHora;
-
         this.finalizada = false;
     }
 
@@ -30,10 +35,12 @@ public class Partida {
         return mandante.getNome() + " X " + visitante.getNome() + " (" + dataHora.format(formato) + ")";
     }
 
+    // --- GETTERS E SETTERS ---
     public Clube getMandante() { return mandante; }
     public Clube getVisitante() { return visitante; }
 
     public LocalDateTime getDataHora() { return dataHora; }
+    public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
 
     public int getGolsMandante() { return golsMandante; }
     public int getGolsVisitante() { return golsVisitante; }

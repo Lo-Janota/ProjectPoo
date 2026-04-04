@@ -9,6 +9,11 @@ public class Campeonato {
     private List<Partida> partidas;
 
     // Construtor
+    public Campeonato() {
+        this.clubes = new ArrayList<>();
+        this.partidas = new ArrayList<>();
+    }
+
     public Campeonato(String nome) {
         this.nome = nome;
         this.clubes = new ArrayList<>();
@@ -16,8 +21,8 @@ public class Campeonato {
     }
 
     public void adicionarClube(Clube clube) throws Exception {
-        if (this.clubes.size() > 20) {
-            throw new Exception("Regra violada: O campeonato '" + this.nome + "' já atingiu o limite de 20 clubes.");
+        if (this.clubes.size() >= 8) {
+            throw new Exception("Regra violada: O campeonato '" + this.nome + "' já atingiu o limite de 8 clubes.");
         }
         this.clubes.add(clube);
     }
@@ -26,7 +31,6 @@ public class Campeonato {
         this.partidas.add(partida);
     }
 
-    // --- GETTERS E SETTERS (ENCAPSULAMENTO) ---
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
