@@ -10,11 +10,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Main {
-
-    // Limite máximo de grupos conforme o enunciado
     private static final int MAX_GRUPOS = 5;
 
-    // Senha fixa do administrador
     private static final String SENHA_ADMIN = "admin123";
 
     private static List<Clube> clubes = new ArrayList<>();
@@ -27,7 +24,6 @@ public class Main {
     private static Grupo grupoPrincipal;
 
     public static void main(String[] args) {
-        // CORRIGIDO: Campeonato e grupo são cadastrados pelo usuário, não fixos no código
         campeonatoAtual = cadastrarCampeonatoInicial();
         grupoPrincipal = cadastrarGrupoInicial();
 
@@ -80,8 +76,6 @@ public class Main {
         janela.setVisible(true);
     }
 
-    // --- CADASTRO INICIAL (antes de abrir a janela principal) ---
-
     private static Campeonato cadastrarCampeonatoInicial() {
         String nome = JOptionPane.showInputDialog(null,
                 "Bem-vindo ao BET PERFECT!\nDigite o nome do Campeonato:");
@@ -98,14 +92,13 @@ public class Main {
         return g;
     }
 
-    // --- AÇÕES DOS BOTÕES ---
 
     private static void cadastrarClube(JFrame parent) {
         String nome = JOptionPane.showInputDialog(parent, "Digite o nome do Clube:");
         if (nome != null && !nome.trim().isEmpty()) {
             try {
                 Clube c = new Clube(nome.trim());
-                campeonatoAtual.adicionarClube(c); // Valida o limite de 8
+                campeonatoAtual.adicionarClube(c);
                 clubes.add(c);
                 JOptionPane.showMessageDialog(parent,
                         "Clube '" + nome.trim() + "' cadastrado!\nTotal de clubes: " + clubes.size() + "/8");
@@ -127,7 +120,7 @@ public class Main {
         if (op == JOptionPane.OK_OPTION) {
             try {
                 Participante p = new Participante(txtNome.getText().trim(), txtEmail.getText().trim());
-                grupoPrincipal.adicionarParticipante(p); // Valida o limite de 5
+                grupoPrincipal.adicionarParticipante(p);
                 participantes.add(p);
                 JOptionPane.showMessageDialog(parent,
                         "Participante '" + p.getNome() + "' cadastrado no grupo '" + grupoPrincipal.getNome() + "'!");
@@ -147,7 +140,6 @@ public class Main {
         JComboBox<String> comboM = new JComboBox<>(nomesClubes);
         JComboBox<String> comboV = new JComboBox<>(nomesClubes);
 
-        // CORRIGIDO: usuário informa a data/hora real da partida
         JTextField txtDataHora = new JTextField("dd/MM/yyyy HH:mm");
 
         Object[] campos = {
@@ -233,7 +225,6 @@ public class Main {
     }
 
     private static void registrarResultado(JFrame parent) {
-        // CORRIGIDO: exige autenticação de administrador
         String senha = JOptionPane.showInputDialog(parent, "Digite a senha de Administrador:");
         if (senha == null || !senha.equals(SENHA_ADMIN)) {
             JOptionPane.showMessageDialog(parent, "Senha incorreta! Acesso negado.", "Acesso Negado", JOptionPane.ERROR_MESSAGE);
@@ -269,7 +260,6 @@ public class Main {
 
                 partidaEscolhida.registrarResultadoReal(golsM, golsV);
 
-                // Calcula pontuação de todas as apostas desta partida
                 for (Aposta a : apostas) {
                     if (a.getPartida() == partidaEscolhida) {
                         a.calcularPontuacao();
@@ -305,7 +295,6 @@ public class Main {
         JOptionPane.showMessageDialog(parent, sb.toString(), "Ranking", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // CORRIGIDO: criação de novos grupos com validação do limite de 5
     private static void criarNovoGrupo(JFrame parent) {
         if (grupos.size() >= MAX_GRUPOS) {
             JOptionPane.showMessageDialog(parent,
