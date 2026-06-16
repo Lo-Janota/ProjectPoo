@@ -3,6 +3,7 @@ package modelo;
 import java.time.LocalDateTime;
 
 public class Aposta {
+    private int id;
     private Partida partida;
     private Participante participante;
     private int golsMandanteApostado;
@@ -10,21 +11,20 @@ public class Aposta {
     private LocalDateTime dataHoraAposta;
 
     public Aposta(Partida partida, Participante participante, int golsM, int golsV) throws Exception {
-        this.partida = partida;
-        this.participante = participante;
-        this.golsMandanteApostado = golsM;
+        this.partida               = partida;
+        this.participante          = participante;
+        this.golsMandanteApostado  = golsM;
         this.golsVisitanteApostado = golsV;
-        this.dataHoraAposta = LocalDateTime.now();
+        this.dataHoraAposta        = LocalDateTime.now();
         validarPrazoAposta();
     }
 
     public Aposta(Partida partida, Participante participante, int golsM, int golsV, LocalDateTime data) throws Exception {
-        this.partida = partida;
-        this.participante = participante;
-        this.golsMandanteApostado = golsM;
+        this.partida               = partida;
+        this.participante          = participante;
+        this.golsMandanteApostado  = golsM;
         this.golsVisitanteApostado = golsV;
-        this.dataHoraAposta = data;
-
+        this.dataHoraAposta        = data;
         validarPrazoAposta();
     }
 
@@ -36,9 +36,7 @@ public class Aposta {
     }
 
     public void calcularPontuacao() {
-        if (!partida.isFinalizada()) {
-            return; // Só calcula se o admin já registou o resultado
-        }
+        if (!partida.isFinalizada()) return;
 
         int realM = partida.getGolsMandante();
         int realV = partida.getGolsVisitante();
@@ -46,20 +44,17 @@ public class Aposta {
 
         if (realM == golsMandanteApostado && realV == golsVisitanteApostado) {
             pontosGanhos = 10;
-        }
-        else {
-            boolean venceuMandanteReal = realM > realV;
+        } else {
+            boolean venceuMandanteReal   = realM > realV;
             boolean venceuMandanteAposta = golsMandanteApostado > golsVisitanteApostado;
-
-            boolean venceuVisitanteReal = realV > realM;
+            boolean venceuVisitanteReal  = realV > realM;
             boolean venceuVisitanteAposta = golsVisitanteApostado > golsMandanteApostado;
-
-            boolean empateReal = realM == realV;
+            boolean empateReal   = realM == realV;
             boolean empateAposta = golsMandanteApostado == golsVisitanteApostado;
 
-            if ((venceuMandanteReal && venceuMandanteAposta) ||
-                    (venceuVisitanteReal && venceuVisitanteAposta) ||
-                    (empateReal && empateAposta)) {
+            if ((venceuMandanteReal && venceuMandanteAposta)
+                    || (venceuVisitanteReal && venceuVisitanteAposta)
+                    || (empateReal && empateAposta)) {
                 pontosGanhos = 5;
             }
         }
@@ -67,6 +62,12 @@ public class Aposta {
         participante.adicionarPontos(pontosGanhos);
     }
 
-    public Partida getPartida() { return partida; }
-    public Participante getParticipante() { return participante; }
+    public int getId()           { return id; }
+    public void setId(int id)    { this.id = id; }
+
+    public Partida getPartida()              { return partida; }
+    public Participante getParticipante()    { return participante; }
+    public int getGolsMandanteApostado()     { return golsMandanteApostado; }
+    public int getGolsVisitanteApostado()    { return golsVisitanteApostado; }
+    public LocalDateTime getDataHoraAposta() { return dataHoraAposta; }
 }

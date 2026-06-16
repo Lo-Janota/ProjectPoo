@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Campeonato {
+    private int id;
     private String nome;
     private List<Clube> clubes;
     private List<Partida> partidas;
 
-    // Construtor
     public Campeonato() {
-        this.clubes = new ArrayList<>();
+        this.clubes   = new ArrayList<>();
         this.partidas = new ArrayList<>();
     }
 
     public Campeonato(String nome) {
-        this.nome = nome;
-        this.clubes = new ArrayList<>();
+        this.nome     = nome;
+        this.clubes   = new ArrayList<>();
         this.partidas = new ArrayList<>();
     }
 
@@ -31,9 +31,12 @@ public class Campeonato {
         this.partidas.add(partida);
     }
 
-    public String getNome() { return nome; }
+    public int getId()           { return id; }
+    public void setId(int id)    { this.id = id; }
+
+    public String getNome()          { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
-    public List<Clube> getClubes() { return clubes; }
+    public List<Clube> getClubes()     { return clubes; }
     public List<Partida> getPartidas() { return partidas; }
 }

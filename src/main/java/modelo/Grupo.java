@@ -5,15 +5,14 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Grupo {
+    private int id;
     private String nome;
     private List<Participante> participantes;
 
-    // Construtor
     public Grupo() {
         this.participantes = new ArrayList<>();
     }
 
-    // Construtor sobrecarregado
     public Grupo(String nome) {
         this.nome = nome;
         this.participantes = new ArrayList<>();
@@ -31,7 +30,6 @@ public class Grupo {
         System.out.println("   CLASSIFICAÇÃO - GRUPO: " + this.nome.toUpperCase());
         System.out.println("=========================================");
         this.participantes.sort(Comparator.comparingInt(Participante::getPontuacaoTotal).reversed());
-
         for (int i = 0; i < participantes.size(); i++) {
             Participante p = participantes.get(i);
             System.out.print((i + 1) + "º Lugar - ");
@@ -40,8 +38,10 @@ public class Grupo {
         System.out.println("=========================================\n");
     }
 
-    // --- GETTERS E SETTERS ---
-    public String getNome() { return nome; }
+    public int getId()           { return id; }
+    public void setId(int id)    { this.id = id; }
+
+    public String getNome()          { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
     public List<Participante> getParticipantes() { return participantes; }

@@ -3,13 +3,11 @@ package modelo;
 public class Participante extends Usuario implements Classificavel {
     private int pontuacaoTotal;
 
-    // Construtor padrão
     public Participante() {
         super();
         this.pontuacaoTotal = 0;
     }
 
-    // Construtor sobrecarregado
     public Participante(String nome, String email) {
         super(nome, email);
         this.pontuacaoTotal = 0;
@@ -31,9 +29,8 @@ public class Participante extends Usuario implements Classificavel {
         }
     }
 
-    // --- GETTERS E SETTERS ---
     @Override
-    public int getPontuacaoTotal() {
-        return pontuacaoTotal;
-    }
+    public int getPontuacaoTotal() { return pontuacaoTotal; }
+
+    public void setPontuacaoTotal(int pontuacao) { this.pontuacaoTotal = pontuacao; }
 }

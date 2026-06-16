@@ -1,3 +1,4 @@
+import database.DatabaseManager;
 import modelo.*;
 
 import javax.swing.*;
@@ -11,31 +12,80 @@ import java.util.List;
 
 public class Main {
     private static final int MAX_GRUPOS = 5;
-
     private static final String SENHA_ADMIN = "admin123";
 
-    private static List<Clube> clubes = new ArrayList<>();
+    private static List<Clube>       clubes       = new ArrayList<>();
     private static List<Participante> participantes = new ArrayList<>();
-    private static List<Grupo> grupos = new ArrayList<>();
-    private static List<Partida> partidas = new ArrayList<>();
-    private static List<Aposta> apostas = new ArrayList<>();
+    private static List<Grupo>       grupos        = new ArrayList<>();
+    private static List<Partida>     partidas      = new ArrayList<>();
+    private static List<Aposta>      apostas       = new ArrayList<>();
 
     private static Campeonato campeonatoAtual;
-    private static Grupo grupoPrincipal;
+    private static Grupo      grupoPrincipal;
 
     public static void main(String[] args) {
-        campeonatoAtual = cadastrarCampeonatoInicial();
-        grupoPrincipal = cadastrarGrupoInicial();
+        // Inicializa o banco de dados
+        DatabaseManager.inicializarBanco();
 
-        if (campeonatoAtual == null || grupoPrincipal == null) {
-            JOptionPane.showMessageDialog(null, "Campeonato ou grupo não criado. Encerrando.", "Erro", JOptionPane.ERROR_MESSAGE);
-            return;
+        // Tenta carregar campeonato existente
+        campeonatoAtual = DatabaseManager.carregarUltimoCampeonato();
+
+        if (campeonatoAtual == null) {
+            // Primeira execução: pede nome do campeonato e do grupo
+            campeonatoAtual = cadastrarCampeonatoInicial();
+            if (campeonatoAtual == null) {
+                JOptionPane.showMessageDialog(null, "Campeonato não criado. Encerrando.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            int campId = DatabaseManager.salvarCampeonato(campeonatoAtual);
+            campeonatoAtual.setId(campId);
+
+            grupoPrincipal = cadastrarGrupoInicial();
+            if (grupoPrincipal == null) {
+                JOptionPane.showMessageDialog(null, "Grupo não criado. Encerrando.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            int grupoId = DatabaseManager.salvarGrupo(grupoPrincipal);
+            grupoPrincipal.setId(grupoId);
+            grupos.add(grupoPrincipal);
+
+        } else {
+            JOptionPane.showMessageDialog(null,
+                "Campeonato '" + campeonatoAtual.getNome() + "' carregado do banco de dados!",
+                "BET PERFECT", JOptionPane.INFORMATION_MESSAGE);
+
+            clubes        = DatabaseManager.carregarClubes(campeonatoAtual.getId());
+            participantes = DatabaseManager.carregarParticipantes();
+            grupos        = DatabaseManager.carregarGrupos(participantes);
+            partidas      = DatabaseManager.carregarPartidas(campeonatoAtual.getId(), clubes);
+            apostas       = DatabaseManager.carregarApostas(partidas, participantes);
+
+            clubes.forEach(c -> { try { campeonatoAtual.adicionarClube(c); } catch (Exception ignored) {} });
+            partidas.forEach(p -> campeonatoAtual.registrarPartida(p));
+
+            grupoPrincipal = grupos.isEmpty() ? null : grupos.get(0);
+
+            if (grupoPrincipal == null) {
+                grupoPrincipal = cadastrarGrupoInicial();
+                if (grupoPrincipal == null) return;
+                int grupoId = DatabaseManager.salvarGrupo(grupoPrincipal);
+                grupoPrincipal.setId(grupoId);
+                grupos.add(grupoPrincipal);
+            }
         }
 
+        // Interface Gráfica
         JFrame janela = new JFrame("Sistema de Apostas - " + campeonatoAtual.getNome());
         janela.setSize(480, 480);
         janela.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         janela.setLocationRelativeTo(null);
+
+        // Fecha o banco ao sair
+        janela.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) {
+                DatabaseManager.fecharConexao();
+            }
+        });
 
         JPanel painelPrincipal = new JPanel();
         painelPrincipal.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -61,7 +111,10 @@ public class Main {
         btn5.addActionListener(e -> registrarResultado(janela));
         btn6.addActionListener(e -> verClassificacao(janela));
         btn7.addActionListener(e -> criarNovoGrupo(janela));
-        btn0.addActionListener(e -> System.exit(0));
+        btn0.addActionListener(e -> {
+            DatabaseManager.fecharConexao();
+            System.exit(0);
+        });
 
         painelPrincipal.add(btn1);
         painelPrincipal.add(btn2);
@@ -76,6 +129,8 @@ public class Main {
         janela.setVisible(true);
     }
 
+    // Setup inicial
+
     private static Campeonato cadastrarCampeonatoInicial() {
         String nome = JOptionPane.showInputDialog(null,
                 "Bem-vindo ao BET PERFECT!\nDigite o nome do Campeonato:");
@@ -87,11 +142,10 @@ public class Main {
         String nome = JOptionPane.showInputDialog(null,
                 "Digite o nome do Grupo principal de apostas:");
         if (nome == null || nome.trim().isEmpty()) return null;
-        Grupo g = new Grupo(nome.trim());
-        grupos.add(g);
-        return g;
+        return new Grupo(nome.trim());
     }
 
+    // Ações da interface
 
     private static void cadastrarClube(JFrame parent) {
         String nome = JOptionPane.showInputDialog(parent, "Digite o nome do Clube:");
@@ -99,7 +153,12 @@ public class Main {
             try {
                 Clube c = new Clube(nome.trim());
                 campeonatoAtual.adicionarClube(c);
+
+                // Salva no banco e guarda o id gerado
+                int id = DatabaseManager.salvarClube(c, campeonatoAtual.getId());
+                c.setId(id);
                 clubes.add(c);
+
                 JOptionPane.showMessageDialog(parent,
                         "Clube '" + nome.trim() + "' cadastrado!\nTotal de clubes: " + clubes.size() + "/8");
             } catch (Exception ex) {
@@ -109,19 +168,22 @@ public class Main {
     }
 
     private static void cadastrarParticipante(JFrame parent) {
-        JTextField txtNome = new JTextField();
+        JTextField txtNome  = new JTextField();
         JTextField txtEmail = new JTextField();
-        Object[] campos = {
-                "Nome:", txtNome,
-                "Email:", txtEmail
-        };
+        Object[] campos = { "Nome:", txtNome, "Email:", txtEmail };
 
         int op = JOptionPane.showConfirmDialog(parent, campos, "Novo Participante", JOptionPane.OK_CANCEL_OPTION);
         if (op == JOptionPane.OK_OPTION) {
             try {
                 Participante p = new Participante(txtNome.getText().trim(), txtEmail.getText().trim());
                 grupoPrincipal.adicionarParticipante(p);
+
+                // Salva no banco
+                int id = DatabaseManager.salvarParticipante(p);
+                p.setId(id);
                 participantes.add(p);
+                DatabaseManager.vincularParticipanteAoGrupo(grupoPrincipal.getId(), id);
+
                 JOptionPane.showMessageDialog(parent,
                         "Participante '" + p.getNome() + "' cadastrado no grupo '" + grupoPrincipal.getNome() + "'!");
             } catch (Exception ex) {
@@ -139,7 +201,6 @@ public class Main {
         String[] nomesClubes = clubes.stream().map(Clube::getNome).toArray(String[]::new);
         JComboBox<String> comboM = new JComboBox<>(nomesClubes);
         JComboBox<String> comboV = new JComboBox<>(nomesClubes);
-
         JTextField txtDataHora = new JTextField("dd/MM/yyyy HH:mm");
 
         Object[] campos = {
@@ -152,21 +213,23 @@ public class Main {
         if (op == JOptionPane.OK_OPTION) {
             int idxM = comboM.getSelectedIndex();
             int idxV = comboV.getSelectedIndex();
-
             if (idxM == idxV) {
                 JOptionPane.showMessageDialog(parent, "Um time não pode jogar contra ele mesmo!", "Erro", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
             try {
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
                 LocalDateTime dataHora = LocalDateTime.parse(txtDataHora.getText().trim(), fmt);
 
                 Partida p = new Partida(clubes.get(idxM), clubes.get(idxV), dataHora);
                 campeonatoAtual.registrarPartida(p);
-                partidas.add(p);
-                JOptionPane.showMessageDialog(parent, "Partida registrada:\n" + p.getDescricao());
 
+                // Salva no banco
+                int id = DatabaseManager.salvarPartida(p, campeonatoAtual.getId());
+                p.setId(id);
+                partidas.add(p);
+
+                JOptionPane.showMessageDialog(parent, "Partida registrada:\n" + p.getDescricao());
             } catch (DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(parent,
                         "Formato de data inválido! Use: dd/MM/yyyy HH:mm", "Erro", JOptionPane.ERROR_MESSAGE);
@@ -180,19 +243,16 @@ public class Main {
             return;
         }
 
-        List<Partida> abertas = partidas.stream()
-                .filter(p -> !p.isFinalizada())
-                .toList();
-
+        List<Partida> abertas = partidas.stream().filter(p -> !p.isFinalizada()).toList();
         if (abertas.isEmpty()) {
             JOptionPane.showMessageDialog(parent, "Nenhuma partida em aberto para apostar.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        String[] nomesPart = participantes.stream().map(Participante::getNome).toArray(String[]::new);
+        String[] nomesPart    = participantes.stream().map(Participante::getNome).toArray(String[]::new);
         String[] descPartidas = abertas.stream().map(Partida::getDescricao).toArray(String[]::new);
 
-        JComboBox<String> comboPart = new JComboBox<>(nomesPart);
+        JComboBox<String> comboPart   = new JComboBox<>(nomesPart);
         JComboBox<String> comboPartida = new JComboBox<>(descPartidas);
         JTextField txtGolsM = new JTextField("0");
         JTextField txtGolsV = new JTextField("0");
@@ -207,15 +267,19 @@ public class Main {
         int op = JOptionPane.showConfirmDialog(parent, campos, "Registrar Aposta", JOptionPane.OK_CANCEL_OPTION);
         if (op == JOptionPane.OK_OPTION) {
             try {
-                int idxPart = comboPart.getSelectedIndex();
                 Partida partidaEscolhida = abertas.get(comboPartida.getSelectedIndex());
+                Participante apostador   = participantes.get(comboPart.getSelectedIndex());
                 int golsM = Integer.parseInt(txtGolsM.getText().trim());
                 int golsV = Integer.parseInt(txtGolsV.getText().trim());
 
-                Aposta a = new Aposta(partidaEscolhida, participantes.get(idxPart), golsM, golsV);
-                apostas.add(a);
-                JOptionPane.showMessageDialog(parent, "Aposta registrada com sucesso!");
+                Aposta a = new Aposta(partidaEscolhida, apostador, golsM, golsV);
 
+                // Salva no banco
+                int id = DatabaseManager.salvarAposta(a);
+                a.setId(id);
+                apostas.add(a);
+
+                JOptionPane.showMessageDialog(parent, "Aposta registrada com sucesso!");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(parent, "Digite apenas números para os gols!", "Erro", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
@@ -231,10 +295,7 @@ public class Main {
             return;
         }
 
-        List<Partida> abertas = partidas.stream()
-                .filter(p -> !p.isFinalizada())
-                .toList();
-
+        List<Partida> abertas = partidas.stream().filter(p -> !p.isFinalizada()).toList();
         if (abertas.isEmpty()) {
             JOptionPane.showMessageDialog(parent, "Nenhuma partida aguardando resultado.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
@@ -260,9 +321,14 @@ public class Main {
 
                 partidaEscolhida.registrarResultadoReal(golsM, golsV);
 
+                // Atualiza no banco
+                DatabaseManager.atualizarResultadoPartida(partidaEscolhida);
+
+                // Calcula pontuações e atualiza participantes no banco
                 for (Aposta a : apostas) {
                     if (a.getPartida() == partidaEscolhida) {
                         a.calcularPontuacao();
+                        DatabaseManager.atualizarPontuacaoParticipante(a.getParticipante());
                     }
                 }
 
@@ -275,23 +341,19 @@ public class Main {
 
     private static void verClassificacao(JFrame parent) {
         List<Participante> parts = new ArrayList<>(grupoPrincipal.getParticipantes());
-
         if (parts.isEmpty()) {
             JOptionPane.showMessageDialog(parent, "Nenhum participante no grupo ainda.");
             return;
         }
-
         parts.sort(Comparator.comparingInt(Participante::getPontuacaoTotal).reversed());
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== CLASSIFICAÇÃO: ").append(grupoPrincipal.getNome().toUpperCase()).append(" ===\n\n");
-
         for (int i = 0; i < parts.size(); i++) {
             Participante p = parts.get(i);
             sb.append((i + 1)).append("º LUGAR - ").append(p.getNome())
-                    .append(" | Pontos: ").append(p.getPontuacaoTotal()).append("\n");
+              .append(" | Pontos: ").append(p.getPontuacaoTotal()).append("\n");
         }
-
         JOptionPane.showMessageDialog(parent, sb.toString(), "Ranking", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -301,10 +363,11 @@ public class Main {
                     "Limite de " + MAX_GRUPOS + " grupos atingido!", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
         String nome = JOptionPane.showInputDialog(parent, "Nome do novo grupo:");
         if (nome != null && !nome.trim().isEmpty()) {
             Grupo g = new Grupo(nome.trim());
+            int id = DatabaseManager.salvarGrupo(g);
+            g.setId(id);
             grupos.add(g);
             JOptionPane.showMessageDialog(parent,
                     "Grupo '" + nome.trim() + "' criado!\nTotal de grupos: " + grupos.size() + "/" + MAX_GRUPOS);

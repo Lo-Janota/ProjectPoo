@@ -3,7 +3,6 @@ package modelo;
 /**
  * Interface que define o contrato para qualquer entidade
  * que possa ser classificada/exibida no ranking do sistema.
- * (Requisito da rubrica: uso de Interface)
  */
 public interface Classificavel {
 
